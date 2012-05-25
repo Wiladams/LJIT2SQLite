@@ -1,34 +1,67 @@
-LJIT2SQLite
-===========
-
-A LuaJIT FFI binding to sqlite3
-
-This binding has two faces.  The first face is the raw interface to the sqlite3.dll library.  Using this raw interface, you can write programs similar to the way you would do things in C.
-
-The second face of the interface makes things a bit more Lua like.  Things start from the sqlite3_conn 'object' which contains various methods to handle creating connections, and managing that connection.  There is a sqlite3_stmt object, and a sqlite3_table object, which manages operations on a single table.
-
-Here are some examples:
+local ffi = require "ffi"
 
 local sql3 = require "ljit2sqlite"
+
+
+-- A simple function to report errors
+-- This will hault the program if there
+-- is an error
+-- Use this when you consider an error to
+-- be an exception
+-- But really, it's just to test things out
+function dbcheck(rc, errormsg)
+	if rc ~=  SQLITE_OK then
+		print("Error Code: ", rc)
+		error(errormsg)
+	end
+
+	return rc, errormsg
+end
+
+
+
+print("Version: ", ffi.string(sql3.sqlite3_libversion()));
+--print("Source ID: ", ffi.string(sql3.sqlite3_sourceid()));
 
 -- Establish a database connection to an in memory database
 local dbconn,err = sqlite3_conn.Open(":memory:");
 
+print(dbconn, err);
+
+
 -- Create a table in the 'main' database
 local tbl, rc, errormsg = dbconn:CreateTable("People", "First, Middle, Last");
 
-tbl:InsertValues("'Bill', 'Albert', 'Gates'");
-tbl:InsertValues("'Larry', 'Devon', 'Ellison'");
-tbl:InsertValues("'Steve', 'Jahangir', 'Jobs'");
-tbl:InsertValues("'Jack', '', 'Sprat'");
-tbl:InsertValues("'Marry', '', 'Lamb'");
-tbl:InsertValues("'Peter', '', 'Piper'");
 
+-- Insert some rows into the table
+dbcheck(tbl:InsertValues("'Bill', 'Albert', 'Gates'"));
+dbcheck(tbl:InsertValues("'Larry', 'Devon', 'Ellison'"));
+dbcheck(tbl:InsertValues("'Steve', 'Jahangir', 'Jobs'"));
+dbcheck(tbl:InsertValues("'Jack', '', 'Sprat'"));
+dbcheck(tbl:InsertValues("'Marry', '', 'Lamb'"));
+dbcheck(tbl:InsertValues("'Peter', '', 'Piper'"));
 
 -- This routine is used as a callback from the Exec() function
 -- It is just an example of one way of interacting with the
 -- thing.  All values come back as strings.
 function dbcallback(userdata, dbargc, dbvalues, dbcolumns)
+	--print("dbcallback", dbargc);
+	local printheadings = userdata ~= nil
+
+	if printheadings then
+		-- print column names
+		for i=0,dbargc-1 do
+			io.write(ffi.string(dbcolumns[i]))
+			if i<dbargc-1 then
+				io.write(", ");
+			end
+
+			if i==dbargc-1 then
+				io.write("\n");
+			end
+		end
+	end
+
 	-- print values
 	for i=0,dbargc-1 do
 		if dbvalues[i] == nil then
@@ -49,9 +82,10 @@ function dbcallback(userdata, dbargc, dbvalues, dbcolumns)
 	return 0;
 end
 
-
 -- Perform a seclect operation using the Exec() function
 dbconn:Exec("SELECT * from People", dbcallback)
+
+
 
 -- Using prepared statements, do the same connect again
 stmt, rc = dbconn:Prepare("SELECT * from People");
@@ -92,6 +126,3 @@ stmt:Finish();
 -- Close the database connection
 dbconn:Close();
 
-
-
-In the last example, a statement is created, and it's Results() function returns an interator, which can easily be used in a typical Lua 'for' loop.
