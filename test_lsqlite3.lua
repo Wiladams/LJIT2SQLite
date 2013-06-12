@@ -1,10 +1,10 @@
 local ffi = require "ffi"
 
-local sql3 = require "ljit2sqlite"
+local sqlite = require "init"
 
 
 -- A simple function to report errors
--- This will hault the program if there
+-- This will halt the program if there
 -- is an error
 -- Use this when you consider an error to
 -- be an exception
@@ -20,26 +20,25 @@ end
 
 
 
-print("Version: ", ffi.string(sql3.sqlite3_libversion()));
---print("Source ID: ", ffi.string(sql3.sqlite3_sourceid()));
-
 -- Establish a database connection to an in memory database
-local dbconn,err = sqlite3_conn.Open(":memory:");
+local dbconn,err = sqlite.DBConnection:open();
 
-print(dbconn, err);
+print("DBConnection: ", dbconn, err);
 
 
 -- Create a table in the 'main' database
-local tbl, rc, errormsg = dbconn:CreateTable("People", "First, Middle, Last");
+local tbl, rc, errormsg = dbconn:createTable({Name = "People", Columns="First, Middle, Last"});
+
+print("Create Table: ", tbl, rc, errormsg);
 
 
 -- Insert some rows into the table
-dbcheck(tbl:InsertValues("'Bill', 'Albert', 'Gates'"));
-dbcheck(tbl:InsertValues("'Larry', 'Devon', 'Ellison'"));
-dbcheck(tbl:InsertValues("'Steve', 'Jahangir', 'Jobs'"));
-dbcheck(tbl:InsertValues("'Jack', '', 'Sprat'"));
-dbcheck(tbl:InsertValues("'Marry', '', 'Lamb'"));
-dbcheck(tbl:InsertValues("'Peter', '', 'Piper'"));
+dbcheck(tbl:insertValues({Values="'Bill', 'Albert', 'Gates'"}));
+dbcheck(tbl:insertValues({Values="'Larry', 'Devon', 'Ellison'"}));
+dbcheck(tbl:insertValues({Values="'Steve', 'Jahangir', 'Jobs'"}));
+dbcheck(tbl:insertValues({Values="'Jack', '', 'Sprat'"}));
+dbcheck(tbl:insertValues({Values="'Marry', '', 'Lamb'"}));
+dbcheck(tbl:insertValues({Values="'Peter', '', 'Piper'"}));
 
 -- This routine is used as a callback from the Exec() function
 -- It is just an example of one way of interacting with the
@@ -83,23 +82,23 @@ function dbcallback(userdata, dbargc, dbvalues, dbcolumns)
 end
 
 -- Perform a seclect operation using the Exec() function
-dbconn:Exec("SELECT * from People", dbcallback)
+dbconn:exec("SELECT * from People", dbcallback)
 
 
 
 -- Using prepared statements, do the same connect again
-stmt, rc = dbconn:Prepare("SELECT * from People");
+stmt, rc = dbconn:prepare("SELECT * from People");
 
 print("Prepared: ", stmt, rc);
 
 -- Prepared columns tells you how many columns should be
 -- in the result set once you start getting results
-print("Prepared Cols: ", stmt:PreparedColumnCount());
+print("Prepared Cols: ", stmt:preparedColumnCount());
 
 -- DataRow Columns is the number of columns that actually
 -- exist for a given row, after you've started getting
 -- rows back.
-print("Data Row Cols: ", stmt:DataRowColumnCount());
+print("Data Row Cols: ", stmt:dataRowColumnCount());
 
 
 -- A simple utility routine to print out the values of a row
@@ -116,13 +115,13 @@ end
 
 -- Using the Results() iterator to return individual
 -- rows as Lua tables.
-for row in stmt:Results() do
+for row in stmt:results() do
 	printRow(row);
 end
 
 -- Finish off the statement
-stmt:Finish();
+stmt:finish();
 
 -- Close the database connection
-dbconn:Close();
+dbconn:close();
 

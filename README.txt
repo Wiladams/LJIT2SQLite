@@ -65,7 +65,7 @@ print("Prepared Cols: ", stmt:PreparedColumnCount());
 -- DataRow Columns is the number of columns that actually
 -- exist for a given row, after you've started getting
 -- rows back.
-print("Data Row Cols: ", stmt:DataRowColumnCount());
+print("Data Row Cols: ", stmt:dataRowColumnCount());
 
 
 -- A simple utility routine to print out the values of a row
@@ -87,7 +87,7 @@ for row in stmt:Results() do
 end
 
 -- Finish off the statement
-stmt:Finish();
+stmt:finish();
 
 -- Close the database connection
 dbconn:Close();
