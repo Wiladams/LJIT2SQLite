@@ -26,7 +26,7 @@
 local ffi = require("ffi");
 local langutils = require("langutils");
 
-local constants = require("sqlite3_constants");
+local constants = require("sqlite3.sqlite3_constants");
 
 function createEnumTokens(tokentable,enumname)
 	enumname = enumname or "";

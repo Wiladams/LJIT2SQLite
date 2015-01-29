@@ -16,7 +16,7 @@ local bit = require "bit"
 local lshift = bit.lshift
 local bor = bit.bor
 
-local codes = require("codes");
+local codes = require("sqlite3.codes");
 
 --[[
 	Created from this version:
@@ -866,18 +866,8 @@ function findrchar(s, c)
     return 0
 end
 
-local procenv = require("processenvironment");
-local stringzutils = require("stringzutils");
 
-local app = procenv.GetAppPath();
-print("APP: ", app);
-local foundchar = findrchar(app, string.byte('\\'));
-local apppath = app:sub(1,foundchar);
-print("APP PATH: ", apppath);
-local libpath = apppath.."lua\\sqlite3\\sqlite3.dll";
-print("LIB PATH: ", libpath);
-
-local Lib = ffi.load(".\\sqlite3");
+local Lib = ffi.load("./lua/sqlite3/sqlite3");
 
 -- initialize the library
 Lib.sqlite3_initialize();
