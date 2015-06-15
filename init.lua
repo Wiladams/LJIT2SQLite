@@ -118,7 +118,7 @@ DBTable_mt = {
 }
 
 
-DBTable.init = function(self, dbconn, tablename)
+function DBTable:init(dbconn, tablename)
 	local obj = {
 		conn = dbconn,
 		tablename = tablename,
@@ -129,10 +129,10 @@ DBTable.init = function(self, dbconn, tablename)
 end
 
 
-DBTable.create = function(self, params)
+function DBTable:create(params)
 	local stmnt = string.format("CREATE TABLE %s (%s) ", params.Name, params.Columns)
 
-print("create: ", stmnt)
+	-- print("create: ", stmnt)
 
 	local rc, errmsg = params.Connection:exec(stmnt)
 
@@ -143,8 +143,8 @@ print("create: ", stmnt)
 	return self:init(params.Connection, params.Name)
 end
 
-
-DBTable.insertValues = function(self, params)
+-- TODO: This should use the bind API, for safety.
+function DBTable:insertValues(params)
 	local stmnt
 	if params.Columns then
 		stmnt = string.format("INSERT INTO %s (%s) VALUES c(%s)", self.tablename, params.Columns, params.Values)
