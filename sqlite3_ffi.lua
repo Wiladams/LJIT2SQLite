@@ -16,7 +16,7 @@ local bit = require "bit"
 local lshift = bit.lshift
 local bor = bit.bor
 
-local codes = require("sqlite3.codes");
+local codes = require("sqlite-ffi.codes");
 
 --[[
 	Created from this version:
@@ -867,7 +867,7 @@ function findrchar(s, c)
 end
 
 
-local Lib = ffi.load("./lua/sqlite3/sqlite3");
+local Lib = ffi.load(ffi.os == "Windows" and "bin/sqlite3" or "sqlite3")
 
 -- initialize the library
 Lib.sqlite3_initialize();
