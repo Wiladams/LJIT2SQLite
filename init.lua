@@ -23,7 +23,7 @@ local DBConnection_mt = {
 	__index = DBConnection
 }
 
-DBConnection.init = function(self, handle, dbname)
+function DBConnection:init(handle, dbname)
 	local obj = {
 		conn = handle,
 		dbname = dbname,
@@ -33,11 +33,11 @@ DBConnection.init = function(self, handle, dbname)
 	return obj
 end
 
-DBConnection.getNativeHandle = function(self)
+function DBConnection:getNativeHandle()
 	return self.conn
 end
 
-DBConnection.open = function(self, dbname)
+function DBConnection:open(dbname)
 	dbname = dbname or ":memory:"
 
 	local lpdb = ffi.new("sqlite3*[1]")
@@ -50,7 +50,7 @@ DBConnection.open = function(self, dbname)
 	return self:init(lpdb[0], dbname)
 end
 
-DBConnection.close = function(self)
+function DBConnection:close()
 	local rc = sql3.sqlite3_close(self.conn)
 	if rc == SQLITE_OK then
 		self.conn = nil
@@ -59,8 +59,8 @@ DBConnection.close = function(self)
 	return rc
 end
 
-DBConnection.exec = function(self, statement, callbackfunc, userdata)
---print("Exec: ", statement)
+function DBConnection:exec(statement, callbackfunc, userdata)
+	--print("Exec: ", statement)
 	local lperrMsg = ffi.new("char *[1]")
 	local rc = sql3.sqlite3_exec(self.conn, statement, callbackfunc, userdata, lperrMsg)
 	local errmsg = lperrMsg[0]
@@ -75,25 +75,25 @@ DBConnection.exec = function(self, statement, callbackfunc, userdata)
 	return rc, errmsg
 end
 
-DBConnection.getLastRowID = function(self)
+function DBConnection:getLastRowID()
 	return sql3.sqlite3_last_insert_rowid(self.conn)
 end
 
-DBConnection.prepare = function(self, statement)
+function DBConnection:prepare(statement)
 	return sqlite.DBStatement(self, statement)
 end
 
-DBConnection.interrupt = function(self)
-	local rc = sql3.sqlite3_interrupt(self.conn)
+function DBConnection:interrupt()
+	return sql3.sqlite3_interrupt(self.conn)
 end
 
 -- DDL
-DBConnection.createTable = function(self, params)
+function DBConnection:createTable(params)
 	params.Connection = self
 	return sqlite.DBTable:create(params)
 end
 
-DBConnection.dropTable = function(tablename)
+function DBConnection:dropTable(tablename)
 	local stmnt = string.format("DROP TABLE %s ", tablename)
 	local rc, errmsg = self:exec(stmnt)
 
@@ -101,7 +101,6 @@ DBConnection.dropTable = function(tablename)
 		return nil, rc, errmsg
 	end
 end
-
 
 --[[
 ==============================================
@@ -226,9 +225,7 @@ DBStatement_mt = {
 	__index = DBStatement,
 }
 
-
-DBStatement.init = function(self, dbconn, stmt)
-
+function DBStatement:init(dbconn, stmt)
 	local obj = {
 		conn = dbconn,
 		stmt = stmt,
@@ -240,17 +237,7 @@ DBStatement.init = function(self, dbconn, stmt)
 	return obj
 end
 
---[[
- int sqlite3_prepare_v2(
-  sqlite3 *db,            /* Database handle */
-  const char *zSql,       /* SQL statement, UTF-8 encoded */
-  int nByte,              /* Maximum length of zSql in bytes. */
-  sqlite3_stmt **ppStmt,  /* OUT: Statement handle */
-  const char **pzTail     /* OUT: Pointer to unused portion of zSql */
-)
-]]
-
-DBStatement.create = function(self, dbconn, statement)
+function DBStatement:create(dbconn, statement)
 	local ppStmt = ffi.new("sqlite3_stmt *[1]")
 	local pzTail = ffi.new("const char *[1]")
 
@@ -330,12 +317,11 @@ end
 
 --[[
 	This is an iterator
-	It will call the Step() function before
+	It will call the step() function before
 	returning rows as lua tables
 
 	Usage:
-
-	for row in stmt:Results() do
+	for row in stmt:results() do
 	    printRow(row)
 	end
 --]]
