@@ -1,9 +1,9 @@
 
 local ffi = require "ffi"
 
-local sql3 = require "sqlite3.sqlite3_ffi"
+local sql3 = require "sqlite-ffi.sqlite3_ffi"
 
-local sqlite = {};
+local sqlite = {}
 
 --[[
 DBConnection.__gc(self)
@@ -12,15 +12,15 @@ DBConnection.__gc(self)
 		end
 end
 --]]
-local DBConnection = {};
+local DBConnection = {}
 setmetatable(DBConnection, {
 	__call = function(self, ...)
-		return self:open(...);
+		return self:open(...)
 	end,
-});
+})
 
 local DBConnection_mt = {
-	__index = DBConnection;
+	__index = DBConnection
 }
 
 DBConnection.init = function(self, handle, dbname)
@@ -28,26 +28,26 @@ DBConnection.init = function(self, handle, dbname)
 		conn = handle,
 		dbname = dbname,
 	}
-	setmetatable(obj, DBConnection_mt);
+	setmetatable(obj, DBConnection_mt)
 
-	return obj;
+	return obj
 end
 
 DBConnection.getNativeHandle = function(self)
-	return self.conn;
+	return self.conn
 end
 
 DBConnection.open = function(self, dbname)
-	dbname = dbname or ":memory:";
+	dbname = dbname or ":memory:"
 
 	local lpdb = ffi.new("sqlite3*[1]")
-	local err = sql3.sqlite3_open(dbname, lpdb);
+	local err = sql3.sqlite3_open(dbname, lpdb)
 
 	if err ~= 0 then
-		return false, err;
+		return false, err
 	end
 
-	return self:init(lpdb[0], dbname);
+	return self:init(lpdb[0], dbname)
 end
 
 DBConnection.close = function(self)
@@ -60,13 +60,13 @@ DBConnection.close = function(self)
 end
 
 DBConnection.exec = function(self, statement, callbackfunc, userdata)
---print("Exec: ", statement);
-	local lperrMsg = ffi.new("char *[1]");
-	local rc = sql3.sqlite3_exec(self.conn, statement, callbackfunc, userdata, lperrMsg);
+--print("Exec: ", statement)
+	local lperrMsg = ffi.new("char *[1]")
+	local rc = sql3.sqlite3_exec(self.conn, statement, callbackfunc, userdata, lperrMsg)
 	local errmsg = lperrMsg[0]
 
 	if rc ~= SQLITE_OK then
-		errmsg = ffi.string(errmsg);
+		errmsg = ffi.string(errmsg)
 
 		-- Free this to avoid a memory leak
 		sql3.sqlite3_free(lperrMsg[0])
@@ -76,11 +76,11 @@ DBConnection.exec = function(self, statement, callbackfunc, userdata)
 end
 
 DBConnection.getLastRowID = function(self)
-	return sql3.sqlite3_last_insert_rowid(self.conn);
+	return sql3.sqlite3_last_insert_rowid(self.conn)
 end
 
 DBConnection.prepare = function(self, statement)
-	return sqlite.DBStatement(self, statement);	
+	return sqlite.DBStatement(self, statement)
 end
 
 DBConnection.interrupt = function(self)
@@ -89,12 +89,12 @@ end
 
 -- DDL
 DBConnection.createTable = function(self, params)
-	params.Connection = self;
-	return sqlite.DBTable:create(params);
+	params.Connection = self
+	return sqlite.DBTable:create(params)
 end
 
 DBConnection.dropTable = function(tablename)
-	local stmnt = string.format("DROP TABLE %s ", tablename);
+	local stmnt = string.format("DROP TABLE %s ", tablename)
 	local rc, errmsg = self:exec(stmnt)
 
 	if rc ~= SQLITE_OK then
@@ -108,32 +108,32 @@ end
 		CRUD Operations with Tables
 ==============================================
 --]]
-DBTable = {};
+DBTable = {}
 setmetatable(DBTable, {
 	__call = function(self, ...)
-		return self:create(...);
+		return self:create(...)
 	end,
-});
+})
 DBTable_mt = {
-	__index = DBTable;
-};
+	__index = DBTable
+}
 
 
 DBTable.init = function(self, dbconn, tablename)
 	local obj = {
 		conn = dbconn,
 		tablename = tablename,
-	};
-	setmetatable(obj, DBTable_mt);
+	}
+	setmetatable(obj, DBTable_mt)
 
-	return obj;
+	return obj
 end
 
 
 DBTable.create = function(self, params)
-	local stmnt = string.format("CREATE TABLE %s (%s) ", params.Name, params.Columns);
+	local stmnt = string.format("CREATE TABLE %s (%s) ", params.Name, params.Columns)
 
-print("create: ", stmnt);
+print("create: ", stmnt)
 
 	local rc, errmsg = params.Connection:exec(stmnt)
 
@@ -141,16 +141,16 @@ print("create: ", stmnt);
 		return nil, rc, errmsg
 	end
 
-	return self:init(params.Connection, params.Name);
+	return self:init(params.Connection, params.Name)
 end
 
 
 DBTable.insertValues = function(self, params)
 	local stmnt
 	if params.Columns then
-		stmnt = string.format("INSERT INTO %s (%s) VALUES c(%s)", self.tablename, params.Columns, params.Values);
+		stmnt = string.format("INSERT INTO %s (%s) VALUES c(%s)", self.tablename, params.Columns, params.Values)
 	else
-		stmnt = string.format("INSERT INTO %s VALUES (%s)", self.tablename, params.Values);
+		stmnt = string.format("INSERT INTO %s VALUES (%s)", self.tablename, params.Values)
 	end
 
 	return self.conn:exec(stmnt)
@@ -187,20 +187,20 @@ int DBTable_column_metadata(
   int *pNotNull,              /* OUTPUT: True if NOT NULL constraint exists */
   int *pPrimaryKey,           /* OUTPUT: True if column part of PK */
   int *pAutoinc               /* OUTPUT: True if column is auto-increment */
-);
+)
 
 		-- Handy CRUD operations
 
 
 
 		Update = function(self, tablename, columns, values)
-		end;
+		end
 
 
 
 		GetErrorMessage = function(self)
 			return ffi.string(sql3.sqlite3_errmsg(self.conn))
-		end;
+		end
 --]]
 
 --[[
@@ -219,9 +219,9 @@ local value_handlers = {
 DBStatement = {}
 setmetatable(DBStatement, {
 	__call = function(self, ...)
-		return self:create(...);
+		return self:create(...)
 	end,
-});
+})
 DBStatement_mt = {
 	__index = DBStatement,
 }
@@ -232,11 +232,12 @@ DBStatement.init = function(self, dbconn, stmt)
 	local obj = {
 		conn = dbconn,
 		stmt = stmt,
+		bindCount = 0,
 		PositionedOnRow = false,
-	};
-	setmetatable(obj, DBStatement_mt);
+	}
+	setmetatable(obj, DBStatement_mt)
 
-	return obj;
+	return obj
 end
 
 --[[
@@ -246,25 +247,65 @@ end
   int nByte,              /* Maximum length of zSql in bytes. */
   sqlite3_stmt **ppStmt,  /* OUT: Statement handle */
   const char **pzTail     /* OUT: Pointer to unused portion of zSql */
-);
+)
 ]]
 
 DBStatement.create = function(self, dbconn, statement)
-	local ppStmt = ffi.new("sqlite3_stmt *[1]");
-	local pzTail = ffi.new("const char *[1]");
+	local ppStmt = ffi.new("sqlite3_stmt *[1]")
+	local pzTail = ffi.new("const char *[1]")
 
-	local rc = sql3.sqlite3_prepare_v2(dbconn:getNativeHandle(), statement, #statement+1, ppStmt, pzTail);
+	local rc = sql3.sqlite3_prepare_v2(dbconn:getNativeHandle(), statement, #statement+1, ppStmt, pzTail)
 
 	if rc ~= SQLITE_OK then
-		return false, rc;
+		return false, rc
 	end
 
-	return self:init(dbconn, ppStmt[0]);
+	return self:init(dbconn, ppStmt[0])
 end
 
+function DBStatement:bind(data, data_type)
+	if type(data) == "table" then
+		for _, bind in ipairs(data) do
+			self:bind(bind[1], bind[2])
+		end
+		return
+	end
+	local binds = {
+		-- blob     = function(s, i, v) sql3.sqlite3_bind_blob(s, i, v) end,
+		double   = function(s, i, v) return sql3.sqlite3_bind_double(s, i, v) end,
+		int      = function(s, i, v) return sql3.sqlite3_bind_int(s, i, v) end,
+		int64    = function(s, i, v) return sql3.sqlite3_bind_int64(s, i, v) end,
+		null     = function(s, i, v) return sql3.sqlite3_bind_null(s, i) end,
+		text     = function(s, i, v) return sql3.sqlite3_bind_text(s, i, v or "", -1, nil) end,
+		-- text16   = sql3.sqlite3_bind_text16,
+		-- value    = sql3.sqlite3_bind_value,
+		-- zeroblob = sql3.sqlite3_bind_zeroblob,
+	}
+	local type_map = {
+		number  = "double",
+		string  = "text",
+		boolean = "int",
+	}
+	self.bindCount = self.bindCount + 1
+	data_type = data_type or type_map[type(data)]
+	assert(data_type)
+	index = index
+	local fn = binds[data_type]
+	assert(fn)
+	local rc = fn(self.stmt, self.bindCount, data)
+	if rc ~= SQLITE_OK then
+		console.e("[DB] %d", rc)
+		return false, rc
+	end
+	return true
+end
+
+function DBStatement:getColumnName(n)
+	return ffi.string(sql3.sqlite3_column_name(self.stmt, n-1))
+end
 
 function DBStatement:getColumnValue(n)
-	return value_handlers[sql3.sqlite3_column_type(self.stmt,n)](self.stmt,n)
+	return value_handlers[sql3.sqlite3_column_type(self.stmt,n-1)](self.stmt,n-1)
 end
 
 function DBStatement:getRowTable()
@@ -272,11 +313,19 @@ function DBStatement:getRowTable()
 
 	local res = {}
 	local nCols = self:dataRowColumnCount()
-	for i=0,nCols-1 do
-		table.insert(res, self:getColumnValue(i))
+	for i=1,nCols do
+		res[i] = self:getColumnValue(i)
 	end
 
-	return res;
+	function res.getTable()
+		local t = {}
+		for i=1, nCols do
+			t[self:getColumnName(i)] = res[i]
+		end
+		return t
+	end
+
+	return res, nCols
 end
 
 --[[
@@ -293,42 +342,45 @@ end
 
 function DBStatement:results()
 	-- Assume the statement has already been Prepared
-
-	local function step()
-		local rc = sql3.sqlite3_step(self.stmt);
-		self.PositionedOnRow = rc == SQLITE_ROW;
-
-		return rc
-	end
-
 	local closure = function()
-		local rc = step();
+		local rc = self:step()
 
 		if rc ~= SQLITE_ROW then
+			if rc == SQLITE_DONE then
+				self:finish()
+			end
 			return nil
 		end
 
-		return self:getRowTable();
+		return self:getRowTable()
 	end
 
-	return closure;
+	return closure
+end
+
+function DBStatement:run()
+	local rc = self:step()
+	self:finish()
+	return rc == SQLITE_DONE, rc
 end
 
 function DBStatement:finish()
-	local rc = sql3.sqlite3_finalize(self.stmt);
-	self.PositionedOnRow = false;
+	if self.PositionedOnRow then
+		local rc = sql3.sqlite3_finalize(self.stmt)
+		self.PositionedOnRow = false
+	end
 end
 
 function DBStatement:step()
-	local rc = sql3.sqlite3_step(self.stmt);
-	self.PositionedOnRow = rc == SQLITE_ROW;
+	local rc = sql3.sqlite3_step(self.stmt)
+	self.PositionedOnRow = rc == SQLITE_ROW
 
 	return rc
 end
 
 function DBStatement:reset()
-	local rc = sql3.sqlite3_reset(self.stmt);
-	self.PositionedOnRow = false;
+	local rc = sql3.sqlite3_reset(self.stmt)
+	self.PositionedOnRow = false
 
 	return rc
 end
@@ -336,33 +388,25 @@ end
 -- Some attributes of the statement
 -- Get number of columns from the prepared statement
 function DBStatement:preparedColumnCount()
-	return sql3.sqlite3_column_count(self.stmt);
+	return sql3.sqlite3_column_count(self.stmt)
 end
 
 function DBStatement:dataRowColumnCount()
-	return sql3.sqlite3_data_count(self.stmt);
+	return sql3.sqlite3_data_count(self.stmt)
 end
 
 function DBStatement:isBusy()
-	local rc = sql3.sqlite3_busy(self.stmt);
+	local rc = sql3.sqlite3_busy(self.stmt)
 	return rc ~= 0
 end
 
 function DBStatement:isReadOnly()
-	local rc = sql3.DBStatement_readonly(self.stmt);
+	local rc = sql3.DBStatement_readonly(self.stmt)
 	return rc ~= 0
 end
 
-
-
-
-
-
-
-
-
-sqlite.DBConnection = DBConnection;
-sqlite.DBTable = DBTable;
-sqlite.DBStatement = DBStatement;
+sqlite.DBConnection = DBConnection
+sqlite.DBTable = DBTable
+sqlite.DBStatement = DBStatement
 
 return sqlite
